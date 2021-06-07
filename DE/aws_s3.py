@@ -12,17 +12,6 @@ import jsonpath #pip3 install jsonpath --user
 
 
 
-host = "fastcampus2.cvjaucer5aw1.us-east-2.rds.amazonaws.com"
-port = 3306
-username = "senna"
-database = "production"
-password = "Aa2154715!"
-
-
-client_id = "2d24e4bc6b004ff0a27e962ab9401adf"
-client_secret = "fea1747e34f541f0ae8bf1de0d2d0657"
-
-
 def main():
     
     # mysql(rds) artist_id
