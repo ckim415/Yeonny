@@ -1,0 +1,18 @@
+presto : 여러개의 파티션으로 나뉘어진 s3 버켓안에서 데이터를 관장하는 툴 (mysql처럼)
+
+local 컴퓨터를 항상 켜놓을 수 없으므로 가상의 서버 생성
+aws lambda : serverless
+
+athena : s3에 저장된 데이터를 통해 데이터베이스 생성 (테이블)
+
+apache spark : 빅데이터를 처리하는 시스템 / 하둡의 진화 버전
+- spark sql
+- spark streaming
+- MLlib
+- GraphX
+
+***map reduce : node(processing term)를 나눠서 데이터를 병렬적으로 분산시켜서 처리
+
+aws emr을 통해서 spark와 제플린 설치
+
+IAM : aws 서비스를 사용하기 위한 세팅 (access등)
