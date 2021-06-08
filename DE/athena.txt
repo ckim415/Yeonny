@@ -9,3 +9,6 @@ CREATE EXTERNAL TABLE IF NOT EXSISTS top_tracks(
 STORED AS PARQUET 
 tblproperties('parquet.compress'='SNAPPY')
 LOCATION 's3://spotify-artists-cy/top-tracks/';
+
+#파티션이 추가 될 때마다 load해줘야 됨
+MSCK REPAIR TABLE top_tracks 
