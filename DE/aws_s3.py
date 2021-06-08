@@ -78,8 +78,9 @@ def main():
     object = s3.Object('spotify-artists-cy', 'top-tracks/dt={}/top-tracks.parquet'.format(dt)) #bucket, partition
     data = open('top-tracks.parquet','rb')
     object.put(Body = data)
-    #S3 import
 
+    
+    
     #Maximum: 100 IDs. audio features
     tracks_batch = [track_ids[i:i+100] for i in range(0, len(track_ids), 100)]
 
@@ -103,9 +104,6 @@ def main():
     object = s3.Object('spotify-artists-cy', 'audio-features/dt={}/top-tracks.parquet'.format(dt)) #bucket, partition
     data = open('audio-features.parquet','rb')
     object.put(Body = data)
-
-
-
 
 
 
