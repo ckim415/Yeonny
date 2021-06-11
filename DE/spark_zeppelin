@@ -1,0 +1,13 @@
+# EMR 에서 클러스터 생성
+  * software = spark / zeppelin
+  * hardware = c4.large
+  * ec2 key : key that created below
+  
+  
+# EC2 key pair
+  * download pem file
+  * convert pem to putty using putty gen
+  
+  
+# 클러스터 생성 후 앱 활성화 까지 성공했으나 , 브라우저로 접속이 되지 않음 (foxproxy 실행 후에도 되지 않음)
+* 왜 안되는 지 잘 모르겟음
