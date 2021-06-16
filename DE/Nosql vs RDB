@@ -1,0 +1,74 @@
+NoSQL - Not Only SQL
+- 다이나믹 스키마 
+- structure 정의하지 않고 documents, key values 생성
+- 데이터베이스 마다 다른 syntax
+- 필드들을 지속적으로 추가 가능 
+- horizontally scalable : sharding / partitioning**
+
+관계형 : 
+- 스키마(구성, 형식)
+- vertically scalable : CPU, RAM or SSD (데이터의 양이 늘어감에 따라 늘려줘야 한다.)
+
+
+** partitioning : 데이터를 나누는 일
+1. vertical : 노말라이제이션 후에도 경우에 따라 칼럼을 나눔 (어떤 컬럼은 지속적으로 업데이트가 되지만 그렇지 않은 경우 등)
+  - RDB에서는 많이 사용이 되지 않으며, 퍼포먼스가 너무 느려질 경우에만 쓰임
+2. horizontal : 스키마 자체를 카피하여 데이터 자체를 shared key로 분리 (primary key)
+
+
+DynamoDB 
+creating table 
+  1.keys
+    - primary key
+    - sort key
+  
+  2.table settings
+    - provisioned : 
+    - ondemand : pay as you use / 트래픽이 얼마나 늘어날지 전혀 모를때, 새로운 테이블이 어떻게 작동하는지 모를때, 쓴만큼만 돈내고 싶을때
+    
+  3. index : partitioning / primary key와 sort key 와 다른 키 값으로 데이터를 그룹화 
+  
+connecting dynamodb with boto3
+
+import boto3
+import sys
+import logging
+def main():
+    #dynamodb 연결
+    try:
+        dynamodb = boto3.resource('dynamodb', region_name ='ap-northeast-2', endpoint_url = 'http://dynamodb.ap-northest-2.amazonaws.com')
+    except:
+        logging.error('could not connect to dynamodb')
+        sys.exit(0)
+
+    print('SUCCESS!')
+    
+
+updating the table 
+table = dynamodb.Table('top_tracks')  #사용할 테이블 정의
+
+    cursor.execute('SELECT id FROM artists LIMIT 1')
+
+    for (artist_id,) in cursor.fetchall():
+
+
+        URL = 'https://api.spotify.com/v1/artists/{}/top-tracks'.format(artist_id)
+
+        #QUERY PARAMETER : market
+        params = {
+            'market' : 'US'    
+        }
+
+        r = requests.get(URL, params=params,headers=headers)
+        raw = json.loads(r.text)
+        
+        for track in raw['tracks']:
+            data = {
+                'artist_id' : artist_id 
+            }
+
+            data.update(track)
+
+            table.put_item( 
+                Item = data 
+            )
