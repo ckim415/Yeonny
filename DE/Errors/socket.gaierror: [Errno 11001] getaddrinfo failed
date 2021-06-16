@@ -1,0 +1,23 @@
+ def main():
+    #dynamodb 연결
+    try:
+        dynamodb = boto3.resource('dynamodb', region_name ='ap-northeast-2', endpoint_url = 'https://ap-northeast-2.amazonaws.com')
+    except:
+        logging.error('could not connect to dynamodb')
+        sys.exit(0)
+ 
+ 이렇게 했을때, 아래와 같은 에러가 발생
+ 
+ for res in _socket.getaddrinfo(host, port, family, type, proto, flags):
+socket.gaierror: [Errno 11001] getaddrinfo failed
+
+ def main():
+    #dynamodb 연결
+    try:
+        dynamodb = boto3.resource('dynamodb', region_name ='ap-northeast-2')
+    except:
+        logging.error('could not connect to dynamodb')
+        sys.exit(0)
+        
+endpoint_url을 없애니 바로 해결됫다.
+stack-overflow 검색 결과 : socket.gaierror usually means it is looking up a hostname via DNS instead of ip address.
