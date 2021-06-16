@@ -88,9 +88,8 @@ def main():
     table = dynamodb.Table('top_tracks')  #사용할 테이블 정의
 
     response = table.query(
-        KeyConditionExpression=Key('artist_id').eq('00FQb4jTyendYWaN8pK0wa'),
+        KeyConditionExpression=Key('artist_id').eq('00FQb4jTyendYWaN8pK0wa'),  #반드시 primary key 나 sort key
         FilterExpression=Attr('popularity').gt(75)
- 
     )
 
     print(response['Items'])
