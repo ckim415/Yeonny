@@ -72,3 +72,28 @@ table = dynamodb.Table('top_tracks')  #사용할 테이블 정의
             table.put_item( 
                 Item = data 
             )
+            
+            
+querying the table : RDB 처럼 query를 날려 데이터를 가져 올 수 있다.
+from boto3.dynamodb.conditions import Key, Attr
+
+def main():
+    #dynamodb 연결
+    try:
+        dynamodb = boto3.resource('dynamodb', region_name = 'us-east-2')
+    except:
+        logging.error('could not connect to dynamodb')
+        sys.exit(0)
+
+    table = dynamodb.Table('top_tracks')  #사용할 테이블 정의
+
+    response = table.query(
+        KeyConditionExpression=Key('artist_id').eq('00FQb4jTyendYWaN8pK0wa'),
+        FilterExpression=Attr('popularity').gt(75)
+ 
+    )
+
+    print(response['Items'])
+    	
+if __name__ == '__main__':
+    main()
