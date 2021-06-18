@@ -1,0 +1,6 @@
+no output location provided. an output location is required either through the workgroup result configuration setting or as an api input. 
+(service: amazonathena; status code: 400; error code: invalidrequestexception;
+
+쿼리 하기전에 위에 파란 상자안에 설정하라는 문구가 뜬다!
+
+위에 에러때문에 한참을 고생했는데 간단하게 해결되서 어이가 없지만 해결되서 다행이다.
