@@ -1,0 +1,22 @@
+데이터 레이크 
+- raw data structure
+- purpose of data not determined 
+- high accesibility / quick to update
+
+ETL
+- extract, transform, load
+
+데이터 파이프라인
+  - 어떻게 관리할 것 인가?
+  - 스케쥴링
+  - 에러 핸들링
+  - 데이터 백필 
+  
+ S3
+ -bucket 생성 / partition으로 나눠서 관리
+ 
+ AWS Glue 
+ - crawler : 데이터에 변형이 있을 시 detect
+ - Schema 관리
+ 
+ S3에 저장 -> spark/athena를 통해 가공
