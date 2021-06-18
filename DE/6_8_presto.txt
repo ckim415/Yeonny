@@ -1,9 +1,9 @@
 presto : 여러개의 파티션으로 나뉘어진 s3 버켓안에서 데이터를 관장하는 툴 (mysql처럼)
 
 local 컴퓨터를 항상 켜놓을 수 없으므로 가상의 서버 생성
-aws lambda : serverless
 
-athena : s3에 저장된 데이터를 통해 데이터베이스 생성 (테이블)
+
+AWS athena : presto 기반으로 s3의 데이터를 query 
 
 apache spark : 빅데이터를 처리하는 시스템 / 하둡의 진화 버전
 - spark sql
@@ -16,3 +16,13 @@ apache spark : 빅데이터를 처리하는 시스템 / 하둡의 진화 버전
 aws emr을 통해서 spark와 제플린 설치
 
 IAM : aws 서비스를 사용하기 위한 세팅 (access등)
+
+
+local 컴퓨터를 항상 켜놓을 수 없으므로 가상의 서버 생성 : 
+- AWS EC2
+
+서버리스 : 서버를 띄우는데 매니지먼트 필수 : 비용과 모니터링 발생
+- 사용량이 늘어남에 따라 지속적으로 병렬로
+- aws lambda : serverless
+  - 사용양에 따라 자동적으로 늘어남
+  - 쓴 만큼만 비용 지불
