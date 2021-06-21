@@ -12,3 +12,9 @@ LOCATION 's3://spotify-artists-cy/top-tracks/';
 
 #파티션이 추가 될 때마다 load해줘야 됨
 MSCK REPAIR TABLE top_tracks 
+
+query를 날릴 때 항상 partition을 고려 해야 한다.
+  ex: WHERE CAST(dt AS date) = CURRENT_DATE
+  
+athena 시각화
+  ad hoc 분석 : 자동화로 하는게 아니라 따로 별도로 데이터를 분석
