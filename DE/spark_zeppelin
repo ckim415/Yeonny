@@ -1,3 +1,8 @@
+ Spark : 파이썬, 스칼라, 자바 등 다양한 프로그래밍 언어의 API 제공 / 머신 러닝 패키지 등 다양한 패키지
+  hadoop의 진화 버전
+ zeppelin : 스파크를 기반으로 한 웹 UI
+
+
 # EMR 에서 클러스터 생성
   * software = spark / zeppelin
   * hardware = c4.large
