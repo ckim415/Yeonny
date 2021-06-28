@@ -73,3 +73,11 @@ print(model2.show()) : return 'car info 220d suv red'  부모 클래스에도 sh
 
 # parent method call
 BenzCar class 의 show(self) 메소드에서 print(super().show()) 문을 넣으면 부모 클래스의 show()도 프린트 된다.
+
+# 상속 info
+print(classname.mro()) : 상속형태를 리스트로 반환
+
+
+*다중 상속
+
+
