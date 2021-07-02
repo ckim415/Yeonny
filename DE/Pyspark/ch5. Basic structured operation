@@ -1,0 +1,20 @@
+create DF : df = spark.read.format('json').load('/data/flight-data/json/2015-summary.json')
+
+*schemas : let data source define schema(schema-on-read) or users define
+ - struct-type made up of a number of fields
+ - structfields : name, type, boolean flag (specifies whether column can contain missing or null)
+ - specify associated metadata (way of storing info about the columns)
+ 
+*Columns and Expressions
+ - columns 
+  - way to construct or refer : 
+      from pyspark.sql.functions import col, column
+      col('someColumnName')
+      column('someColumnName')
+  - refer to specific column : use col ex) df.col('count')    
+    
+ - expression : operations on columns / set of transformations on one or more values in DF
+  - expr('somecol') = col('somecol')
+  - columns as expressions 
+   - columns = expressions
+   - parsed expressions : columns and transformations of those columns compile to the same logical plan 
