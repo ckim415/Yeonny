@@ -5,3 +5,27 @@ Structured Api : tool for manipulating all sorts of data from unstructured log f
  
  - typed and untyped Apis
  - How spark actually takes structured api data flows and executes it on the cluster
+
+*Dataframes and Datasets : immutable, lazily evaluated plans
+
+*Schema : defines column names and types of a DF
+ - define schema manually or read a schema from a data source
+ 
+*Overview of structured spark types
+ - Catalyst : engine that spark uses / maintains its own type info through the planning and processing of work
+ - directly map on the different apis that Spark maiatains and there exists a lookup table for each of these in diff languages.
+ - DF vs Datasets
+ - Colunms : simple type liek an integer or stirng, complex type (array, map, null)
+ - Rows: record of data
+ - Spark types : 
+ 
+ *Overview of Structured API execution : process of how the code is executed across a cluster.
+  1. write DF/Datasets/SQL code
+  2. converts this to a logical plan
+  3. transfroms the logical plan to physical plan, checking for optimizations along the way
+  4. executes this Physical plan on the cluster
+  
+  - logical planning : convert the users code into the most optimized version
+  - physical planning(spark plan) : how the logical plan will execute on the cluster by generating different physical execution strategies and comparing them througha cost model.
+  
+  
