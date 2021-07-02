@@ -1,0 +1,20 @@
+*running production applications
+ - spart-submit : send the application code to a cluster execute there
+  - python version : ./bin/spart-submit --master local./examples/src/main/python/pi.py 10
+  
+*Datesets : type-safe structured APIs
+ - gives users the ability to assign a Java/Scala class to the records within a DF and manipulate it as a collection of typed objects.
+ - type safe : cannot accidentally vies the objects in a dataset as being of another calss than the class you put in initially
+ - can use only when needed or wanted
+ - for collect or take, collect objects fo the proper type in Dataset not DF rows
+ 
+*Structrued Streaming : same operations in batch mode and run them in a streaming fasion.
+ - rapidly and quickly extract value out of streaming systems with virtually no code changes
+ - think about the datasets that retail stores send the products to the locations (dates, time, locations and etc)
+ - 
+ 
+*Lower-level APIs : for arbirary Java and Python object manipulation via RDD
+ - python : from pyspark.sql import Row
+            spark.sparkContext.parallelize([Row(1), Row(2), Row(3)]).toDF()
+
+*SparkR : running R on Spark
