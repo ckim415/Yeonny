@@ -1,0 +1,43 @@
+*Architectrue
+ - cluster : 마치 한 개의 컴퓨터에서 처럼, 다른 머신들의 resource를 모으고, 그것들을 합친 능력을 준다.
+ - clusters are managed by cluster manager (YARN or Mesos)
+ - submit application to those cluster manager 
+ 
+*Spart Application : consists of drive and executor processes
+ - drive process : runs main() function
+    1. maintain the information about Spark application
+    2. respond to a user's program or input
+    3. analize, distribute and schedule work across the executors
+ - executor proocess : carrying out the work which the driver assigns them
+    1. execute the code assigned to them
+    2. report the state fo teh computation
+    
+ *Language API
+  - Scala : Spark's defualt language
+  - Python, Java, SQL, R
+  
+ *Spark Session : entrance point to running spark code
+  - the way Spark executes user-defined manipulations across the cluster
+  
+ *DataFrames : a table of data
+  - partitions : chunks that datas are broken up into / collections of rows
+  - dataframs partition : how the data is distributed across the cluster of machines during execution
+    - do not maipulate partitions manually or individually
+    
+ *Transformation : instructions of how users like to modify the data structures as they want
+  - **the core data structures are <<immutable>>
+  - ex python code) divisBy2 = myRange.where('number % 2 = 0') / this returns no output
+  - Narrow transformations :  each input partition will contribute to only one output partition (so like 1 to 1)
+  - Wide transformations : input partition contributes to many output partitions (so like 1 to many)
+    - automatically perform pipelining (performed in memory)
+    - shuffle : writes the result in disk ( discussed later)
+  - Lazy Evaluation : wait until the last moment to execute the graph of computition instructions ( r
+  
+*Actions : to trigger the computation
+  1. to view the data in the console
+  2. to collect data 
+  3. to write to output data sources
+  
+
+    
+  
