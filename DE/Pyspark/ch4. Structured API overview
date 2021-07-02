@@ -1,0 +1,7 @@
+Structured Api : tool for manipulating all sorts of data from unstructured log files to semi structured CSV files
+ 1. Datasets
+ 2. DataFrames
+ 3. SQL tables and views
+ 
+ - typed and untyped Apis
+ - How spark actually takes structured api data flows and executes it on the cluster
