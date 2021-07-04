@@ -1,0 +1,382 @@
+*Where to Look for APIs
+ - DataFrameStatFunctions : variety of statistically related functions
+ - DataFrameNaFunctions : functions that are relavant when working with null data
+ - culumn methods : alias or contains
+
+ # in Python
+  df = spark.read.format("csv")\
+    .option("header", "true")\
+    .option("inferSchema", "true")\
+    .load("/data/retail-data/by-day/2010-12-01.csv")
+  df.printSchema()
+  df.createOrReplaceTempView("dfTable")
+  
+  # result
+  +---------+---------+--------------------+--------+-------------------+----...
+|InvoiceNo|StockCode| Description|Quantity| InvoiceDate|Unit...
++---------+---------+--------------------+--------+-------------------+----...
+| 536365| 85123A|WHITE HANGING HEA...| 6|2010-12-01 08:26:00| ...
+| 536365| 71053| WHITE METAL LANTERN| 6|2010-12-01 08:26:00| ...
+...
+| 536367| 21755|LOVE BUILDING BLO...| 3|2010-12-01 08:34:00| ...
+| 536367| 21777|RECIPE BOX WITH M...| 4|2010-12-01 08:34:00| ...
++---------+---------+--------------------+--------+-------------------+----...
+
+*Converting to Spark types : convert native type to Spark types
+ - lit : converts a type in another language to its corresponding Spark representation.
+    # in python
+    from pyspark.sql.functions import lit
+    df.select(lit(5), lit('five'), lit(5.0))
+    
+*Working with Booleans : Boolean statements consist of 4 elements(and,or,true,false)
+ - less-than or greater-than
+   # in python:
+   1. from pyspark.sql.functions import col
+      df.where(col('InvoiceNo') != 536365\
+        .select('InvoiceNo', 'Description')\
+        .show(5,false)
+        
+ - does not equal
+    df.where("InvoiceNo = 536365")
+      .show(5, false)
+    df.where("InvoiceNo <> 536365")
+      .show(5, false)
+     
+- using "and" or "or" (always chain together and filters as a sequential filter) -> spark will flatten all serial expressions into one statement
+  - example  
+    #inpython
+    from pyspark.sql.functions. import instr
+    priceFilter = col('UnitPrice') > 600
+    descripFilter = instr(df.Description, 'POSTAGE') >= 1
+    df.where(df.StockCode.isin('DOT')).where(priceFilter | descripFilter).show()
+    
+    #in SQL
+    SELECT * FROM dfTable WHERE StockCode in ("DOT") AND(UnitPrice > 600 ORinstr(Description, "POSTAGE") >= 1)
+
+    +---------+---------+--------------+--------+-------------------+---------+...
+    |InvoiceNo|StockCode| Description|Quantity| InvoiceDate|UnitPrice|...
+    +---------+---------+--------------+--------+-------------------+---------+...
+    | 536544| DOT|DOTCOM POSTAGE| 1|2010-12-01 14:32:00| 569.77|...
+    | 536592| DOT|DOTCOM POSTAGE| 1|2010-12-01 17:06:00| 607.49|...
+    +---------+---------+--------------+--------+-------------------+---------+...
+    
+  - to filter DataFrame, specify a boolean column
+    #in python
+    DOTCodeFilter = col("StockCode") == "DOT"
+    priceFilter = col("UnitPrice") > 600
+    descripFilter = instr(col("Description"), "POSTAGE") >= 1
+    df.withColumn("isExpensive", DOTCodeFilter & (priceFilter | descripFilter))\
+    .where("isExpensive")\
+    .select("unitPrice", "isExpensive").show(5)
+    
+    # in SQL
+    SELECT UnitPrice, (StockCode = 'DOT' AND
+    (UnitPrice > 600 OR instr(Description, "POSTAGE") >= 1)) as isExpensive
+    FROM dfTable
+    WHERE (StockCode = 'DOT' AND
+          (UnitPrice > 600 OR instr(Description, "POSTAGE") >= 1))
+          
+ - WHERE clause 
+   # in python
+   from pyspark.sql.functions import expr
+   df.withColumn('isExpensive', expr('NOT UnitPrice <= 250'))\  #isExpensive is columns name of result
+     .where('isExpensive)\
+     .select('Description', 'UnitPrice').show(5)
+     
+ 
+*Working with numbers : counting things
+ - example: we mis-recorded the quantity in our retail dataset and the true quantity = (current * price)^2 + 5
+  #in python
+  from pyspark.sql.functions import expr,now
+  fabricatedQuantity = pow(col('Quantity') * col('UnitPrice'), 2) + 5
+  df.select(expr('CustomerId'), fabricatedQuantity.alias('realQuantity')).show(2)
+  
+  # in sql
+  SELECT customerId, (POWER((Quantity * UnitPrice), 2.0) + 5) as realQuantity
+  FROM dfTable
+
+  #result
+  +----------+------------------+
+  |CustomerId| realQuantity|
+  +----------+------------------+
+  | 17850.0  |239.08999999999997|
+  | 17850.0  | 418.7156|
+  +----------+------------------+
+  
+ - rounding : can cast the value / but have more detailed functions
+  # in Python
+  from pyspark.sql.functions import lit, round, bround
+  df.select(round(lit("2.5")), bround(lit("2.5"))).show(2)
+  
+  #result
+  +-------------+--------------+
+  |round(2.5, 0)|bround(2.5, 0)|
+  +-------------+--------------+
+  | 3.0         | 2.0|
+
+ - correlation of two columns
+  # in Python
+  from pyspark.sql.functions import corr
+  df.stat.corr("Quantity", "UnitPrice")
+  df.select(corr("Quantity", "UnitPrice")).show()
+    
+ - summary statistics for a column or set of columns
+  # in Python
+  df.describe().show()
+  
+  # result
+  +-------+------------------+------------------+------------------+
+  |summary|          Quantity|         UnitPrice|        CustomerID|
+  +-------+------------------+------------------+------------------+
+  | count | 3108             |         3108     |              1968|
+  | mean  | 8.627413127413128| 4.151946589446603|15661.388719512195|
+  | stddev|26.371821677029203|15.638659854603892|1854.4496996893627|
+  | min   |               -24|               0.0|           12431.0|
+  | max   |               600|            607.49|           18229.0|
+  +-------+------------------+------------------+------------------+
+
+  if want exact number :
+   # in Python
+   from pyspark.sql.functions import count, mean, stddev_pop, min, max
+
+ - working with strings : manipulating log files performing regular expression extraction or
+                          substitution, or checking for simple string existence, or making all strings uppercase or
+                          lowercase.
+  - upper or lowercase
+   - initcap : capitalize every word when that word is seperated from another by a space
+    # in Python
+    from pyspark.sql.functions import initcap
+    df.select(initcap(col("Description"))).show()
+   
+    # in SQL
+    SELECT initcap(Description) FROM dfTable
+   
+    #result
+    +----------------------------------+
+    |initcap(Description) |
+    +----------------------------------+
+    |White Hanging Heart T-light Holder|
+    |White Metal Lantern |
+    +----------------------------------+
+   -lowercase and uppercase
+    # in Python
+    from pyspark.sql.functions import lower, upper
+    df.select(col("Description"),
+    lower(col("Description")),
+    upper(lower(col("Description")))).show(2)
+    
+    #in SQL
+    SELECT Description, lower(Description), Upper(lower(Description)) FROM dfTable
+    
+  - adding or removing spaces around a string : lpad, ltrim, rpad, rtrim, trim
+   # in Python
+   from pyspark.sql.functions import lit, ltrim, rtrim, rpad, lpad, trim
+   df.select(
+   ltrim(lit(" HELLO ")).alias("ltrim"),
+   rtrim(lit(" HELLO ")).alias("rtrim"),
+   trim(lit(" HELLO ")).alias("trim"),
+   lpad(lit("HELLO"), 3, " ").alias("lp"),
+   rpad(lit("HELLO"), 10, " ").alias("rp")).show(2)
+   
+   #result
+   +---------+---------+-----+---+----------+
+   | ltrim   | rtrim   | trim| lp|        rp|
+   +---------+---------+-----+---+----------+
+   |HELLO    |    HELLO|HELLO| HE|HELLO     |
+   +---------+---------+-----+---+----------+
+   
+  - Regular Expressions
+   # in Python
+   from pyspark.sql.functions import regexp_replace
+
+ - working with dates and timestamps : to keep track of timezones and ensure that formats are correct and valid
+  - when we enable inferSchma
+  - relates to working with strings
+  - have to know exactly what type and format
+  
+  # in Python
+  from pyspark.sql.functions import current_date, current_timestamp
+  dateDF = spark.range(10)\
+  .withColumn("today", current_date())\
+  .withColumn("now", current_timestamp())
+  dateDF.createOrReplaceTempView("dateTable")
+  
+  dateDF.printSchema()
+  
+  root
+  |-- id: long (nullable = false)
+  |-- today: date (nullable = false)
+  |-- now: timestamp (nullable = false)
+  
+  - add or subtract days
+   # in Python
+   from pyspark.sql.functions import date_add, date_sub
+   dateDF.select(date_sub(col("today"), 5), date_add(col("today"), 5)).show(1)
+   
+   # in SQL
+   
+   #result
+   SELECT date_sub(today, 5), date_add(today, 5) FROM dateTable
+   +------------------+------------------+
+   |date_sub(today, 5)|date_add(today, 5)|
+   +------------------+------------------+
+   |        2017-06-12|        2017-06-22|
+   +------------------+------------------+
+
+ - difference between two dates
+  # in Python
+  from pyspark.sql.functions import datediff, months_between, to_date
+  dateDF.withColumn("week_ago", date_sub(col("today"), 7))\
+    .select(datediff(col("week_ago"), col("today"))).show(1)
+  
+  dateDF.select(
+  to_date(lit("2016-01-01")).alias("start"),
+  to_date(lit("2017-05-22")).alias("end"))\
+    .select(months_between(col("start"), col("end"))).show(1)
+  
+  # in SQL
+  SELECT to_date('2016-01-01'), months_between('2016-01-01', '2017-01-01'),
+  datediff('2016-01-01', '2017-01-01')
+  FROM dateTable
+  
+  # result
+  +-------------------------+
+  |datediff(week_ago, today)|
+  +-------------------------+
+  |                       -7|
+  +-------------------------+
+  +--------------------------+
+  |months_between(start, end)|
+  +--------------------------+
+  |              -16.67741935|
+  +--------------------------+
+  
+ - to_date : you to convert a string to a date ( specified format)
+  # in Python
+  from pyspark.sql.functions import to_date, lit
+  spark.range(5).withColumn("date", lit("2017-01-01"))\
+    .select(to_date(col("date"))).show(1)
+
+  dateDF.select(to_date(lit("2016-20-12")),to_date(lit("2017-12-11"))).show(1)
+  
+  #result
+  +-------------------+-------------------+
+  |to_date(2016-20-12)|to_date(2017-12-11)|
+  +-------------------+-------------------+
+  |               null|         2017-12-11|
+  +-------------------+-------------------+
+
+  # in Python
+  from pyspark.sql.functions import to_date
+  dateFormat = "yyyy-dd-MM"
+  cleanDateDF = spark.range(1).select(
+  to_date(lit("2017-12-11"), dateFormat).alias("date"),
+  to_date(lit("2017-20-12"), dateFormat).alias("date2"))
+  cleanDateDF.createOrReplaceTempView("dateTable2")
+ 
+  #n SQL
+  SELECT to_date(date, 'yyyy-dd-MM'), to_date(date2, 'yyyy-dd-MM'), to_date(date)
+  FROM dateTable2
+  +----------+----------+
+  | date| date2|
+  +----------+----------+
+  |2017-11-12|2017-12-20|
+  +----------+----------+
+  
+ - to_timestamp : always requires a format to be specified
+  # in Python
+  from pyspark.sql.functions import to_timestamp
+  cleanDateDF.select(to_timestamp(col("date"), dateFormat)).show()
+  
+  #in SQL
+  SELECT to_timestamp(date, 'yyyy-dd-MM'), to_timestamp(date2, 'yyyy-dd-MM')
+  FROM dateTable2
+  +----------------------------------+
+  |to_timestamp(`date`, 'yyyy-dd-MM')|
+  +----------------------------------+
+  | 2017-11-12 00:00:00|
+  +----------------------------------+
+  
+- working with Nulls in data
+ - at Dataframe scale : .na() subpackage
+ - drop or fill with a value
+  - coalesce : select the first non-null value from a set of columns 
+   # in Python
+   from pyspark.sql.functions import coalesce
+   df.select(coalesce(col("Description"), col("CustomerId"))).show()
+
+  - ifnull(select second value if the first is null), nullIf, nvl, and nvl2
+  
+  - drop : removes rows that contain nulls
+   # df.na.drop("any") 
+    1.any : null values
+    2.all : null or Nan
+    
+  - fill: fill one or more columns with a set of values.
+   # df.na.fill("All Null values become this string")
+  
+  - replace: replace all values in a certain column
+   # in Python
+   df.na.replace([""], ["UNKNOWN"], "Description")
+
+*Ordering : specify where you would like your null values to appear in an ordered DataFrame.
+ - asc_nulls_first, desc_nulls_first,asc_nulls_last, or desc_nulls_last
+    
+*Working with complex types: structs, arrays, maps
+ 1. structs : Dataframe within dataframe
+  # in Python
+  from pyspark.sql.functions import struct
+  complexDF = df.select(struct("Description", "InvoiceNo").alias("complex"))
+  complexDF.createOrReplaceTempView("complexDF")
+  
+  - getField : query it just as we might another dataframe
+   #in python
+   complexDF.select("complex.Description")
+   complexDF.select(col("complex").getField("Description"))
+   
+ 2. arrays
+ 
+ 
+*Working with Json
+ - creating json column
+  # in Python
+  jsonDF = spark.range(1).selectExpr("""'{"myJSONKey" : {"myJSONValue" : [1, 2, 3]}}' as jsonString""")
+ 
+ - 
+  # in Python
+  from pyspark.sql.functions import get_json_object, json_tuple
+  jsonDF.select(
+  get_json_object(col("jsonString"), "$.myJSONKey.myJSONValue[1]") as "column",
+  json_tuple(col("jsonString"), "myJSONKey")).show(2)
+  
+  # result
+  +------+--------------------+
+  |column| c0|
+  +------+--------------------+
+  | 2|{"myJSONValue":[1...|
+  +------+--------------------+
+  
+ - to_json : turn StructType into a JSON string
+  # in Python
+  from pyspark.sql.functions import to_json
+  df.selectExpr("(InvoiceNo, Description) as myStruct")\
+    .select(to_json(col("myStruct")))
+
+ - from_json : parse dict(map) of parameters back in 
+  # in Python
+  from pyspark.sql.functions import from_json
+  from pyspark.sql.types import *
+  parseSchema = StructType((
+  StructField("InvoiceNo",StringType(),True),
+  StructField("Description",StringType(),True)))
+  df.selectExpr("(InvoiceNo, Description) as myStruct")\
+  .select(to_json(col("myStruct")).alias("newJSON"))\
+  .select(from_json(col("newJSON"), parseSchema), col("newJSON")).show(2)
+  
+  #result:
+  +----------------------+--------------------+
+  |jsontostructs(newJSON)| newJSON|
+  +----------------------+--------------------+
+  | [536365,WHITE HAN...|{"InvoiceNo":"536...|
+  | [536365,WHITE MET...|{"InvoiceNo":"536...|
+  +----------------------+--------------------+
