@@ -1,0 +1,244 @@
+Aggregating : collecting sth together
+ - specify a key or grouping 
+ - aggregation function : specify how the columns are transformed
+ - usually to summarize numerical data by means of grouping
+ - group by, window, grouping set, rollup, cube
+ 
+*Agrregation Functions
+ - count 
+  #in python
+  from pyspark.sql.functions import count
+  df.select(count('StockCode')).show()
+  
+  #in sql
+  SEELCT COUNT(*) FROM dfTable
+  
+  **nulls : when performing count(*), spark will count null values, but when counting individual column, Spark will not count the nulls
+  
+ - countDistinct
+ #in python
+ from pyspark.sql.functions import countDistinct
+ df.select(countDistinct('StockCode')).show()
+ 
+ #in sql
+ SELECT COUNT(DISTINCT * ) FROM dfTable
+ 
+ - approx_count_distinct : used when the exact distinct count is irrelevant
+ #in python
+ from pyspark.sql.functions import approx_count_distinct
+ df.select(approx_count_distinct('StockCode'), 0.1)).show()
+                                               #maximum estimation error
+                                               
+ - first / last : get the fisrt/last values from dataframe
+  #in python
+  from pyspark.sql.functions improt first, last
+  df.select(first('Stockcode'), last('Stockcode')).show()
+  
+  #in sql
+  SELECT first(StockCode), last(StockCode) From dfTable
+  
+ - min / max
+  #in python
+  from pyspark.sql.functions import min, max
+  df.select(min('Qunatity'), max('Qunatity')).show()
+  
+  #in sql
+  SELECT MIN(Qunatity), MAX((Qunatity) FROM dfTable
+  
+ - sum
+  #in python
+  from pyspark.sql.functions import sum
+  df.select( sum('Quantity')).show()
+  
+  #in sql
+  SELECT sum(Quantity) FROM dfTable
+  
+ - avg : avg and mean functions
+  #in python
+  from pyspark.sql.functions import sum, count, avg, expr
+  df.select(
+          count('Qunatity').alias('total_transactions'),
+          sum('Quantity').alias('total_purchases'),
+          avg('Quantity').alias('avg_purchases'),
+          expr('mean(Quantity)').alias('mean_purchase'))
+     .selectExpr(
+          'total_purchases/total_transactions',
+          'avg_purchases',
+          'mean_purchases').show()
+  
+  #result
+  +--------------------------------------+----------------+----------------+
+  |(total_purchases / total_transactions)|   avg_purchases|  mean_purchases|
+  +--------------------------------------+----------------+----------------+
+  |                      9.55224954743324|9.55224954743324|9.55224954743324|
+  +--------------------------------------+----------------+----------------+
+          
+ - aggregating to complex types: collect a list of values or unique values by collectin to a set
+  # in python 
+  from pyspark.sql.functions immport collect_set, collect_list
+  df.agg(collect_set( 'Country'), collect_list('Country')).show()
+ 
+  #in sql
+  SELECT collect_set( Country), collect_list(Country) FROM dfTable
+ 
+*Grouping
+ - grouping with expressions
+  agg: rather than passing that functions as an expression into a select statement, specify it as within agg
+   # in python
+   from pyspark.sql.functions import count
+   df.groupBy('InvoiceNo").agg(
+                            count('Qunatity').alias('quan'),
+                            expr('count(Qunatity)')).show()
+                            
+   # result
+   +---------+----+---------------+
+   |InvoiceNo|quan|count(Quantity)|
+   +---------+----+---------------+
+   |   536596|   6|              6|
+   ...
+   |  C542604|   8|              8|
+   +---------+----+---------------+
+   
+  - grouping with maps: key : column, value : aggregation function
+   #in python
+   df.groupBy('InvoiceNo').agg(expr('avg(Quantity)'), expr('stddev_pop(Quantity)')).show()
+   
+   #in sql
+   SELECT avg(Quantity), stddev_pop(Quantity), InvioceNo FROM dfTable GROUP BY InvoiceNo
+   
+   # result
+   +---------+------------------+--------------------+
+   |InvoiceNo|     avg(Quantity)|stddev_pop(Quantity)|
+   +---------+------------------+--------------------+
+   |   536596|               1.5|  1.1180339887498947|
+   ...
+   |  C542604|              -8.0|  15.173990905493518|
+   +---------+------------------+--------------------+
+
+   
+*Window Functions : Window specification determines which rows will be passed in to the function
+ - calculates a return value fro every input row of a table based on a group of rows (frame)
+ - ranking, analytic, aggregate functions
+ 
+ 1. create a window specification
+  partition : window is not related to partition itself, but shares common concept that data are divided into groups.
+  # in python
+  from pyspark.sql.window import Window
+  from pyspark.sql.functions import desc
+  windowSpec = Window
+                  .partitionBy('CustomerId', 'date')
+                  .orderBy(desc('Quantity'))
+                  .rowsBetween( Window.unboundedPreceding, Window.currentRow)
+                  
+ 2. apply aggregation function
+  #in python
+  from pyspark.sql.functions import max
+  maxPurchaseQuantity = max(col('Quantity')).over(windowSpec)
+  -> return a column or expression 
+  
+  from pyspark.sql.functions import dense_rank, rank #to create purchase quantity rank / dense : dont allow the gap
+  purchaseDenseRank = dense_rank().over(windowSpec)
+  purchaseRank = rank().over(windowSpec)
+  -> return a column or expression -> can use that in select statements
+  
+  from pyspark.sql.functions import col
+  dfWithDate.where('CustomerId IS NOT NULL').orderBy('CustomerId')
+    .select(
+           col('CustomerId'),
+           col('date')
+           col('Quantity'),
+           purchaseRank.alias('quantityRank'),
+           purchaseDenseRank.alias('quantityDenseRank'),
+           maxPurchaseQuantity.alias('maxPurchaseQuantity')).show()
+
+  # result
+  +----------+----------+--------+------------+-----------------+---------------+
+  |CustomerId|      date|Quantity|quantityRank|quantityDenseRank|maxP...Quantity|
+  +----------+----------+--------+------------+-----------------+---------------+
+  |     12346|2011-01-18|   74215|           1| 1| 74215|
+  |     12346|2011-01-18|  -74215|           2| 2| 74215|
+  |     12347|2010-12-07|      36|           1| 1| 36|
+  |     12347|2010-12-07|      30|           2| 2| 36|
+      ...
+  |     12347|2010-12-07|      12| 4| 4| 36|
+  |     12347|2010-12-07|       6| 17| 5| 36|
+  |     12347|2010-12-07|       6| 17| 5| 36|
+  +----------+----------+--------+------------+-----------------+---------------+
+   
+   
+*Grouping Sets : for aggregation across multiple groups / only available in SQL
+ - low-level tool for combining sets of aggregations together
+ 
+ begin with getting total quantity of all stock codes and customers
+  #inpython
+  dfNoNull = dfWithDate.drop()
+  dfNoNull.createOrReplaceTempView('dfNoNull')
+  
+  #in sql
+  SELECT CustomerId, stockCode, sum(Quantity) FROM dfNoNull
+  GROUP BY customerId, stockCode  ((( GROUPING SETS((customerId, StockCode)))  ##this can be removed
+  ORDER BY CustomerID DESC, stockCode DESC
+  
+  ** if null values are not filtered out, will get incorrect results. also cube and rollups too
+  
+ - rollups : multidimensional aggregation that performs a variety of group-by style calculations / treat elements hierarchially
+  # create the rollup (looks across time and space)
+  # in python
+  rolldedUpDF = dfNoNull.rollup('Date', 'Country').agg(sum('Quantity'))
+    .selectExpr( 'Date', 'Country', "'sum(Quantity)' as total_quantity")
+    .orderBy('Date')
+    
+  rolledUpDF.show()
+
+  # result
+  +----------+--------------+--------------+
+  |      Date|       Country|total_quantity|
+  +----------+--------------+--------------+
+  |      null|          null|       5176450|
+  |2010-12-01|United Kingdom|         23949|
+  |2010-12-01|       Germany|           117|
+  |2010-12-01|        France|           449|
+  ...
+  |2010-12-03|        France|           239|
+  |2010-12-03|         Italy|           164|
+  |2010-12-03|       Belgium|           528|
+  +----------+--------------+--------------+
+  
+ - cube : takes the rollup to a level deeper / treat elements hierarchically across all dimensions.
+  - if the table has date, country, total_quantity columns, the cube table will include
+    total across all dates and countries
+    total for each date across all countries
+    total for each country on each date
+    total for each country acorss all dates
+   
+   # in python
+   dfNoNull.cube('Date', 'Country').agg(sum(col('Qunatity')))
+      .select('Date', 'Country', 'sum(Quantity)').orderBy('Date').show()
+      
+   # result
+   +----+--------------------+-------------+
+   |Date| Country|sum(Quantity)|
+   +----+--------------------+-------------+
+   |null| Japan| 25218|
+   |null| Portugal| 16180|
+   |null| Unspecified| 3300|
+   |null| null| 5176450|
+   |null| Australia| 83653|
+   ...
+   |null| Norway| 19247|
+   |null| Hong Kong| 4769|
+   |null| Spain| 26824|
+   |null| Czech Republic| 592|
+   +----+--------------------+-------------+
+
+ - grouping metadata : to query the aggregation levels so that you can easily filter them down accordingly
+ 
+    
+  
+ 
+
+
+                            
+   
+ 
+ 
