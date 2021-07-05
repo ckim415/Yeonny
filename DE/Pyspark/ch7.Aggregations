@@ -233,6 +233,13 @@ Aggregating : collecting sth together
 
  - grouping metadata : to query the aggregation levels so that you can easily filter them down accordingly
  
+ - pivot : convert a row into a column
+  #in python
+  pivoted = dfWithDate.groupBy('date').pivot('Country').sum()
+   
+*User-Defined Aggregation Functions : way for users to define thier own aggregation function based on custom formula or rules.
+
+
     
   
  
