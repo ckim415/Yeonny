@@ -1,0 +1,242 @@
+*Join Expressions
+ - join: bring together two sets of data
+ - determines whether two rows should join
+ 
+*Joinn types  (go over these functions by showing some examples)
+ - determines what should be in the result set
+  1. inner join: keep rows with keys that exist in the left and right datasets
+  2. outer join: keep rows with keys that either the left or right datasets
+  3. right outer join: keep rows with keys in the right dataset
+  4. left semi joins: keep rows in the left, and only the left, dataset where the ky appears in the right dataset
+  5. left anti joins: keep the rows in the left, and only the left, dataset where they do not apper in the right dataset 
+  6. natural join: perfrom a join by implicitly matching the columns between the two datasets with the same names
+  7. cross(or cartesian) join: match every row in the left dataset with every row in the right dataset
+   
+ - example (starts with creating the dataset first)
+  # in python
+  person = spark.createDataFrame([
+              (0, 'Bill Chambers', 0, [100]),
+              (1, "Matei Zaharia", 1, [500, 250, 100]),
+              (2, "Michael Armbrust", 1, [250, 100])])\
+            .toDF("id", "name", "graduate_program", "spark_status")
+  graduateProgram = spark.createDataFrame([
+              (0, "Masters", "School of Information", "UC Berkeley"),
+              (2, "Masters", "EECS", "UC Berkeley"),
+              (1, "Ph.D.", "EECS", "UC Berkeley")])\
+            .toDF("id", "degree", "department", "school")
+  sparkStatus = spark.createDataFrame([
+              (500, "Vice President"),
+              (250, "PMC Member"),
+              (100, "Contributor")])\
+             .toDF("id", "status")
+
+  person.createOrReplaceTempView("person")
+  graduateProgram.createOrReplaceTempView("graduateProgram")
+  sparkStatus.createOrReplaceTempView("sparkStatus")
+   
+  #result
+  person
+  +---+-----+-----------------+-------------+
+  | id| name| graduate_program| spark_status|
+  +---+-----+-----------------+-------------+
+  ...
+   
+  graduateProgram
+  +---+-------+-----------+---------+
+  | id| degree| department|   school|
+  +---+-------+---------------------+
+  ...
+   
+  sparkStatus
+  +---+-------+
+  | id| status|
+  +---+-------+
+  ...
+   
+  1.inner joins : join the graduateProgram df with the person df to create a new df 
+   #in python
+   joinExpression = person['graduate_program'] == graduateProgram['id'] 
+   
+   - inner join is default : need to specify left df and join the right in the join expression
+     #in python 
+     person.join(graduateProgram, joinExpression).show()
+
+     #in Sql
+     SELECT * FROM person 
+     JOIN graduateProgram 
+     ON person.graduate_program = graduateProgram.id
+
+     #result
+     +---+----------------+----------------+---------------+---+-------+----------+---
+     | id|            name|graduate_program|   spark_status| id| degree|department|...
+     +---+----------------+----------------+---------------+---+-------+----------+---
+     |  0|   Bill Chambers|               0|          [100]|  0|Masters| School...|...
+     |  1|   Matei Zaharia|               1|[500, 250, 100]|  1|  Ph.D.|      EECS|...
+     |  2|Michael Armbrust|               1|     [250, 100]|  1|  Ph.D.|      EECS|...
+     +---+----------------+----------------+---------------+---+-------+----------+---
+   
+    - can also specify this explicitly by passing in a third parameter, jointype
+     #in python
+     joinType = 'inner'
+     person.join(graduateProgram, joinExpression, joinType).show()
+    
+     #in Sql
+     SELECT * FROM person 
+     INNER JOIN graduateProgram
+     ON person.graduate_program = graduateProgram.id -> give the same result shown above
+   
+   
+  2.outer joins: evaluate the keys in both of the df and evaluate to true or false / fill non equivalent row with nulls
+   # in python
+   joinType = 'outer'
+   person.join(graduateProgram, joinExpression, joinType).show()
+   
+   #in sql
+   SELECT * FROM person
+   FULL OUTER JOIN graduateProgram
+   ON person.graduate_program = graduateProgram.id
+   
+   #result
+   +----+----------------+----------------+---------------+---+-------+-------------
+   |  id|            name|graduate_program|   spark_status| id| degree| departmen...
+   +----+----------------+----------------+---------------+---+-------+-------------
+   |   1|   Matei Zaharia|               1|[500, 250, 100]| 1|   Ph.D.| EEC...
+   |   2|Michael Armbrust|               1|     [250, 100]| 1|   Ph.D.| EEC...
+   |null|            null|            null|           null| 2| Masters| EEC...
+   |   0|   Bill Chambers|               0|          [100]| 0| Masters| School...
+   +----+----------------+----------------+---------------+---+-------+-------------
+   
+   
+  3.left outer joins: all rows from left df as well as right df that have a match in the left df /fill non equivalent row with nulls
+   #in python
+   joinType = 'left_outer'
+   joinExpression = person['graduate_program'] == graduateProgram['id'] 
+   graduateProgram.join(person, joinExpression, joinType).show()
+   
+   #in sql
+   SELCT * FROM graduateProgram
+   LEFT OUTER JOIN person
+   ON person.graduate_program = graduateProgram.id
+   
+   #result                            |
+   graduate_program                   | person
+   +---+-------+----------+-----------+----+----------------+----------------+---
+   | id| degree|department|     school|  id|            name|graduate_program|...
+   +---+-------+----------+-----------+----+----------------+----------------+---
+   |  0|Masters| School...|UC Berkeley|   0|   Bill Chambers|               0|...
+   |  2|Masters|      EECS|UC Berkeley|null|            null|            null|...
+   |  1|  Ph.D.|      EECS|UC Berkeley|   2|Michael Armbrust|               1|...
+   |  1|  Ph.D.|      EECS|UC Berkeley|   1|   Matei Zaharia|               1|...
+   +---+-------+----------+-----------+----+----------------+----------------+---
+                                      |
+
+  4.right outer joins: all rows from right df as well as right df that have a match in the right df /fill non equivalent row with nulls
+  
+  
+  5.left semi joins: 
+   - not actually include any vales from right df. 
+   - only compare values to see if the value exists in the second df
+    - if the values exist, those rows will be kept in the result
+    
+   example of usage of joins as filters
+   #in python
+   joinType = 'left_semi'
+   graduateProgram.join(person, joinExpression, joinType).show()
+   
+   #result
+   +---+-------+--------------------+-----------+
+   | id| degree|          department|     school|
+   +---+-------+--------------------+-----------+
+   |  0|Masters|School of Informa...|UC Berkeley|
+   |  1|  Ph.D.|                EECS|UC Berkeley|
+   +---+-------+--------------------+-----------+
+   
+   examle of left semi join
+   #in python
+   gradProgram2 = graduateProgram.union(spark.createDataFrame([
+                          (0, "Masters", "Duplicated Row", "Duplicated School")]))  #union() method of the DataFrame is used to combine two DataFrame’s of the same structure/schema.
+                                                                                      If schemas are not the same it returns an error.
+   gradProgram2.createOrReplaceTempView("gradProgram2")
+   gradProgram2.join(person, joinExpression, joinType).show()
+   
+   #in SQL
+   SELECT * FROM gradProgram2 LEFT SEMI JOIN person
+   ON gradProgram2.id = person.graduate_program
+   
+   #result
+   +---+-------+--------------------+-----------------+
+   | id| degree|          department|           school|
+   +---+-------+--------------------+-----------------+
+   |  0|Masters|School of Informa...|      UC Berkeley|
+   |  1|  Ph.D.|                EECS|      UC Berkeley|
+   |  0|Masters|      Duplicated Row|Duplicated School|
+   +---+-------+--------------------+-----------------+
+   
+   
+  6.left anti joins: opposite of left semi joins. rather than keeping the values that exist in the seconde df, but only the values that do not have a
+                     corresponding key in the seconde df
+   - think of this as NOT IN sql-style filter
+   #in python
+   joinType = "left_anti"
+   graduateProgram.join(person, joinExpression, joinType).show()
+   
+   #in SQL
+   SELECT * FROM graduateProgram LEFT ANTI JOIN person
+   ON graduateProgram.id = person.graduate_program
+   +---+-------+----------+-----------+
+   | id| degree|department|     school|
+   +---+-------+----------+-----------+
+   |  2|Masters|      EECS|UC Berkeley|
+   +---+-------+----------+-----------+
+   
+  
+  7.natural joins
+   - makes implicit quesses at the columns on which you like to join
+   - use it carefully
+   
+   
+  8.cross join (cartesian)
+   - will join every single row in the left df to every single row in right df
+   - this cuases an absolute explosion in the number of rows contained
+   - by using the cross join keyword
+   
+   #in python
+   joinType = 'cross'
+   graduateProgram.join(person, joinexpression, joinType).show()
+   
+   #in sql
+   SELECT * FROM graduateProgram 
+   CROSS JOIN person
+   ON graduateProgram.id = person.graduate_program
+   
+   #result
+   +---+-------+----------+-----------+---+----------------+----------------+-------
+   | id| degree|department|     school| id|            name|graduate_program|spar...
+   +---+-------+----------+-----------+---+----------------+----------------+-------
+   |  0|Masters| School...|UC Berkeley|  0|   Bill Chambers|               0| ...
+   |  1|  Ph.D.|      EECS|UC Berkeley|  2|Michael Armbrust|               1| [2...
+   |  1|  Ph.D.|      EECS|UC Berkeley|  1|   Matei Zaharia|               1|[500...
+   +---+-------+----------+-----------+---+----------------+----------------+-------
+   
+   example of true cross join
+   #in python
+   person.crossJoin(graduateProgram).show()
+   
+   #in sql
+   SELECT * FRROM graduateProgram CROSS JOIN person
+  
+   #result
+   +---+----------------+----------------+---------------+---+-------+-------------+
+   | id|            name|graduate_program|   spark_status| id| degree|   departm...|
+   +---+----------------+----------------+---------------+---+-------+-------------+
+   |  0|   Bill Chambers|               0|          [100]|  0|Masters|    School...|
+   ...
+   |  1|   Matei Zaharia|               1|[500, 250, 100]|  0|Masters|    School...|
+   ...
+   |  2|Michael Armbrust|               1|     [250, 100]|  0|Masters|    School...|
+   ...
+   +---+----------------+----------------+---------------+---+-------+-------------+
+   
+   only use this join when 100percent sure that you need 
+   
+  
