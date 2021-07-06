@@ -239,4 +239,60 @@
    
    only use this join when 100percent sure that you need 
    
+*Challenges when using joins
+ - joins on complex types : any expression is a valid join expression, asumming that it returns a Boolean
+  example
+  # in python
+  from pyspark.sql.functions import expr
+  person.withColumnRenamed('id', 'personId')
+    .join(sparkStatus, expr('array_contains(spark_status, id)')).show()
+    
+  # in sql
+  SELECT * FROM 
+    (select id as personId, name, graduate_program, spark_status FROM person)
+  INNER JOIN sparkStatus 
+  ON array_contains(spark_status, id)
+  
+  #result
+  +--------+----------------+----------------+---------------+---+--------------+
+  |personId|            name|graduate_program|   spark_status| id|        status|
+  +--------+----------------+----------------+---------------+---+--------------+
+  |       0|   Bill Chambers|               0|          [100]|100|   Contributor|
+  |       1|   Matei Zaharia|               1|[500, 250, 100]|500|Vice President|
+  |       1|   Matei Zaharia|               1|[500, 250, 100]|250|    PMC Member|
+  |       1|   Matei Zaharia|               1|[500, 250, 100]|100|   Contributor|
+  |       2|Michael Armbrust|               1|     [250, 100]|250|    PMC Member|
+  |       2|Michael Armbrust|               1|     [250, 100]|100|   Contributor|
+  +--------+----------------+----------------+---------------+---+--------------+
+
+ - handling duplicate column names
+  - the join expression that you specify does not remove one key from one of the input df and the keys have the same column name
+  - two columns on which you are not performing the join have the same name
+  
+  how to fix?
+  - change join expression from a boolean expression to a string or sequence.
+  - drop the offending column after the join/ have to refer to the column via the original source df
+  - rename a column before the join
+  
+*how spark performs joins
+ - node to node communication strategy
+ - per node computation strategy
+ - can mean the difference between a job that completes quickly and one that never completes at all (??)
+ 
+ - communication stragegies
+  - big table to big table  
+   - end up with a shuffle join (every node talks to other node and they share data according to which node has a certain
+                                 key or set of keys)
+  - big table to small table
+   - broadcast join : replicate the small df onto every worker node in the cluster
+    
+   
+  
+  
+ 
+ 
+
+
+  
+ 
   
