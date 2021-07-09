@@ -1,0 +1,54 @@
+Data Source
+core data sources
+ - CSV
+ - JSON
+ - Parquet
+ - ORC
+ - JDBC/ODBC connections
+ - Plain-text files
+ 
+community-created data sources
+ - Cassandra
+ - HBase
+ - MongoDB
+ - AWS Redshift
+ - XML
+ - etc
+ 
+*Structure of the Data Sources API
+ - read api structure
+  ****format : DataFrameReader.format(...).option('key', 'value').schema(...).load()****
+  
+ - basics of reading data
+  1.reading data in spark : DataFrameReader
+  2.access this through the sparksession via read attribute : spark.read
+  3.specify the values
+   - format
+   - schema
+   - the read mode
+   - a series of options
+   example
+   spark.read.format('csv')
+    .option('mode', 'FAILFAST')   # read mode : permissive, dropMalformed, failFast
+    .option('inferSchema', 'true')
+    .option('path', 'path/to/files')
+    .schema(someSchema)
+    .load()
+    
+ - basics of writing data: similar to reading data / DataFrameWirter.
+  - save mode
+   1.append: append the output files to the list of files that already exist at that location
+   2.overwrite: will completely overwrite any data that already exists there
+   3.errorIfExists: throws an error and fails the write if data or files already exists at the location
+   4.ignore: if data or files exist at the location, do nothing with the current Df
+   
+*CSV Files
+ - reading csv files
+  spark.read.format('csv')
+  
+  
+  
+Ch10. Spark Sql
+
+
+   
