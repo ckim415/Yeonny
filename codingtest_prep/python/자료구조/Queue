@@ -1,0 +1,58 @@
+1.구조
+ - 줄을 서는 행위와 유사
+ - 가장 먼저 넣은 데이터를 가장 먼저 꺼낼 수 있는 구조
+ - FIFO
+ 
+2.알아둘 용어
+ - Enqueue : 큐에 데이터를 넣는 행위
+ - Dequeue : 큐에 데이터를 빼는 행위
+ 
+3.queue 라이브러리 활용해서 큐 자료 구조 사용하기
+ - Queue()
+  import queue
+  data_queue = queue.Queue()
+  data_queue.put('funcoding')
+  data_queue.put(2)
+  data_queue.qsize() >>> 2
+  
+  data_queue.get() >>> 'funcoding'
+  data_queue.qsize() >>> 1
+  
+  
+ - LifoQueue()
+  import queue
+  data_queue = queue.LifoQueue()
+  data_queue.put('funcoding')
+  data_queue.put(1)
+  data_queue.qsize() >>> 2
+  
+  data_queue.get() >>> 1
+  
+  
+ - PriorityQueue(): 우선순위 번호에 따라 (우선순위, data)
+  import queue
+  data_queue = queue.PriorityQueue()
+  data_queue.put((10,'korea'))
+  data_queue.put((5,1))
+  data_queue.put((15,'china'))
+  data_queue.qsize() >>> 3
+  
+  data_queue.get() >>> (5,1)
+  data_queue.get() >>> (10,'korea')
+  
+
+어디에 큐가 많이 쓰일까?
+ - 멀티 태스킹을 위한 프로세스 스케쥴링 방식을 구현하기 위해 많이 사용됨\
+
+
+queue_list = list()
+def enqueue(data): 
+  enqueue_list.append(data)
+  
+def dequeue(data):
+  data = queue_list[0]
+  del queue_list[0]
+  return data
+
+  
+  
