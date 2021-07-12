@@ -1,0 +1,99 @@
+충돌 해결 알고리즘
+ - 1.open hashing : 추가적인 공간을 확보해서 저장
+  - 충돌이 일어나면, 링크드 리스트를 이용해서, 데이터를 추가로 뒤에 연결시켜서 저장하는 방법
+  
+  - 연습문제 기존의 연습 코드에 더하기
+   def get_key(data):
+      return hash(data)
+      
+   def hash_function(key):
+      return key % 8
+   
+   def save_data(data, value):
+      index_key = get_key(data)   #따로 저장한 이유 : 링크드 리스트로 연결 되어 있기 때문에 어떤게 무엇인지 따로 명시 필요함
+      hash_address = hash_fucntion(index_key)
+      if hash_table[hash_address] != 0:
+          for index in range(len(hash_table[hash_address])): #해쉬테이블의 한 슬롯에 연결된 리스트가 있는지
+              if hash_table[hash_address][index][0] == index_key:
+                  hash_table[hash_address][index][1] = value
+                  return 
+          hash_table[hash_address].append([index_key, value])  
+          
+      else:
+          hash_table[hash_address] = list([index_key, value])
+   
+   def read_data(data):
+      index_key = get_key(data)
+      hash_address = hash_function(index_key)
+      if hash_table[hash_address] != 0:
+          for index in range(len(hash_table[hash_address])):
+              if hash_table[hash_address][index][0] == index_key:
+                  return hash_table[hash_address][index][1]
+          return None
+      else:
+          return None
+    
+  
+  
+ - 2.linear probing 
+  - closed hashing : 해쉬 테이블 안의 빈공간에 데이터를 저장
+   - 저장공간 활용도를 높이기 위한 기법
+   
+    hash_table = [0 for i in range(9)]
+
+    def get_key(data):
+      return hash(data)
+
+    def hash_function(key):
+      return key % 8
+
+    def save_data(data, value):
+      index_key = get_key(data)   #따로 저장한 이유 : 링크드 리스트로 연결 되어 있기 때문에 어떤게 무엇인지 따로 명시 필요함
+      hash_address = hash_function(index_key)
+      if hash_table[hash_address] != 0:
+          for index in range(hash_address, len(hash_table)): #데이터의 해쉬 주소부터 해쉬 테이블 끝까지
+              if hash_table[index] == 0:  #해쉬 주소에 값이 있는지 없는지
+                  hash_table[index] = [index_key, value]
+                  return 
+
+              elif hash_table[index][0] == index_key: #키가 동일하고 이미 값이 있는 경우 -> 업데이트
+                hash_table[index][1] = value
+                return 
+
+      else:
+        hash_table[hash_address] = [index_key, value]
+
+
+    def read_data(data):
+      index_key = get_key(data)
+      hash_address = hash_function(index_key)
+      if hash_table[hash_address] != 0:
+          for index in range(hash_address, len(hash_table)):
+              if hash_table[index] == 0:
+                  return None
+
+              elif hash_table[index][0] == index_key:
+                return hash_table[index][1]    
+
+      else:
+          return None
+
+
+빈번한 해쉬 충동을 개선하는 방법
+ - 슬럿을 늘려 저장공간을 확대
+
+참고 : 해쉬 함수와 키 생성 함수
+ - 파이썬의 hash()함수는 실행 할 때마다, 값이 달라질 수 있음
+ - 유명한 해쉬 함수들이 존재 : SHA(Secure Hash Algorithmm, 안전한 해쉬 알고리즘)
+  - 어떤 데이터도 유일한 고정된 크기의 고정값을 리턴해주므로, 해쉬 함수로 유용하게 활용
+  
+  
+  
+시간 복잡도
+ - 일반적인 경우 (충돌이 없는 경우)는 O(1)
+ - 최악의 경우 (충돌이 있는 경우) 는 O(n)
+    - 해쉬 테이블의 경우, 일반적인 경우를 기대하고 만들기 때문에, 시간 복잡도는 O(1)이라고 말할 수 있음
+
+
+
+
