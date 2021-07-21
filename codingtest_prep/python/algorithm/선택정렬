@@ -1,0 +1,13 @@
+선택정렬: 데이터 중 가장 작은 값을 데이터 맨 앞에 위치한 값과 교체 (맨 앞의 위치를 뺀 나머지 데이터를 동일하게 수행)
+
+코드로 구현
+def selectsort(data):
+  
+  for index in range(len(data)-1):
+    lowest = index
+    for index2 in range(index+1, len(data)):
+      if data[lowest] > data[index2]:
+        lowest = index2
+    data[lowest], data[index] = data[index], data[lowest]
+ 
+ return data
