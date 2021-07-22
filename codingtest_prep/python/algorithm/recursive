@@ -1,0 +1,38 @@
+recursive / 재귀 용법
+ - 함수 안에서 동일한 함수를 호출하는 형태
+ - 여러 알고리즘 작성시 사용되므로, 익숙해져야함
+ 
+ 1.재귀 용법 이해
+   - 예제
+    - factorial
+
+   - 코드로 구현
+    def factorial(num):
+
+      if num <= 1:
+        return num
+
+      return num * factorial(num-1)
+
+2. 일반적인 형태
+ - 1
+ def function(입력):
+  if 입력 > 일정값:
+    return function(입력 -1)
+    
+  else:
+    return 일정값, 입력값 또는 특정값
+    
+ - 2
+ def function(입력):
+  if 입력 <= 일정값:
+    return 일정값, 입력값 또는 특정값
+    
+  function(입력값보다 작은값)
+  return 결과값
+  
+  
+3. 동작 방식: 재귀 호출은 스택의 전형적인 예
+
+
+    
