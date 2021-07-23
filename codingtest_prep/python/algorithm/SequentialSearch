@@ -1,0 +1,10 @@
+말그대로 데이터를 순차적으로 탐색하는 기법
+
+파이썬
+def sequential_search(data, search):
+  
+  for i in range(len(data)):
+    if data[i] == search:
+      return i
+      
+  return False
