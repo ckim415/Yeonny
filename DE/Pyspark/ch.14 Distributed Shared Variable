@@ -62,6 +62,70 @@ these two are variables you can use in user-defined functions
  - provide a mutable variable that a Spark cluster can safely update on a per-row basis
   - can use this for debugging purposes or to create low-level aggregation
  - variables that are added to only through an associative and commutative operation and can therefore be supported in parallel
-   
+ - spark guarantees that each task's update to the accumulator will be applied only once, meaning that restarted tasks will not update the value
+ - follow the lazy evaluation model of spark
+ - can be named or unnamed
+  - named will display thier running results in the spark ui
+  - unnamed will not
+ 
+ 1. example
+  - custom aggregation on the flight dataset, use the dataset api
+  in Scala
+  case class Flight(DEST_COUNTRY_NAME: String,ORIGIN_COUNTRY_NAME: String, count: BigInt)
+  val flights = spark.read
+    .parquet("/data/flight-data/parquet/2010-summary.parquet")
+    .as[Flight]
+    
+  in Python
+  flights = spark.read.parquet("/data/flight-data/parquet/2010-summary.parquet")
+  
+  - create accumulator (count the number of flights to or from China)
+  in Scala
+  import org.apache.spark.util.LongAccumulator
+  val accUnnamed = new LongAccumulator
+  val acc = spark.sparkContext.register(accUnnamed)
+  
+  in Python
+  accChina = spark.sparkContext.accumulator(0)
 
+  - named accumulator
+   - a short-hand method
+   - long-hand method
+  in Scala
+  val accChina = new LongAccumulator
+  val accChina2 = spark.sparkContext.longAccumulator("China")
+  spark.sparkContext.register(accChina, "China")
+  
+  - define the way we add to our accumulator
+  in Scala
+  def accChinaFunc(flight_row: Flight) = {
+   val destination = flight_row.DEST_COUNTRY_NAME
+   val origin = flight_row.ORIGIN_COUNTRY_NAME
+   if (destination == "China") {
+    accChina.add(flight_row.count.toLong)
+   }
+   if (origin == "China") {
+   accChina.add(flight_row.count.toLong)
+   }
+  }
+  
+  in Python
+  def accChinaFunc(flight_row):
+   destination = flight_row["DEST_COUNTRY_NAME"]
+   origin = flight_row["ORIGIN_COUNTRY_NAME"]
+   if destination == "China":
+    accChina.add(flight_row["count"])
+   if origin == "China":
+    accChina.add(flight_row["count"])
+    
+  - iterate over every row in our flights via foreach method
+  in Scala
+  flights.foreach(flight_row => accChinaFunc(flight_row))
+  
+  in Python
+  flights.foreach(lambda flight_row: accChinaFunc(flight_row))
+  
+ 2. custom accumulators
+  - scala : subclass the AccumulatorV2 class
+  - python : create your own custom accumulators by subclassing AccumulatorParam
    
