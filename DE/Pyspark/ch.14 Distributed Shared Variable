@@ -1,0 +1,67 @@
+second kind of low-level Api : distributed shared variable
+ 1. broadcast variable : save a large value on all the worker nodes and reuse it across many Spark actions without re-sending it to the cluster
+ 2. accumulators : let user add together data from all the tasks into a shared result
+these two are variables you can use in user-defined functions
+
+* Broadcast Variables : a way to share an immutable value around the cluster without encapsulating that variable in a function closure.
+ - normal way to use a variable is to simply reference it in the function closures
+  => inefficient for large variable such as a lookup table or a ml model.
+ - broad cast variables are shared, immutable variables that are cached on every machine in the cluster instead of serialized with every single task.
+ - ex) a list of words or values
+  1)
+    in Scala
+    val myCollection = "Spark The Definitive Guide : Big Data Processing Made Simple"
+    .split(" ")
+    val words = spark.sparkContext.parallelize(myCollection, 2)
+
+    in python
+    my_collection = "Spark The Definitive Guide : Big Data Processing Made Simple".split(" ")
+    words = spark.sparkContext.parallelize(my_collection, 2)
+  
+  2)  right join 
+    in Scala
+    val supplementalData = Map("Spark" -> 1000, "Definitive" -> 200, "Big" -> -300, "Simple" -> 100)
+
+    in Python
+    supplementalData = {"Spark":1000, "Definitive":200, "Big":-300, "Simple":100}
+
+  3) broadcast this structure across spark and reference it by using suppBroadcast
+    (valus is immutable and is lazily replicated across all nodes in the cluster when we trigger an action
+    in scala
+    val suppBroadcast = spark.sparkContext.broadcast(supplementalData)
+
+    in python
+    suppBroadcast = spark.sparkContext.broadcast(supplementalData)
+
+  4) reference this variable via the varialbe method
+    in scala
+    suppBroadcast.value
+
+    in python
+    suppBroadcast.value
+
+  5) transform RDD using this value 
+   - create a key-value pair according to the value we might have in the map
+   in scala
+   words.map(word => (word, suppBroadcast.value.getOrElse(word, 0)))
+    .sortBy(wordPair => wordPair._2)
+    .collect()
+   
+   in python
+   words.map(lambda word: (word, suppBroadcast.value.get(word, 0)))\
+    .sortBy(lambda wordPair: wordPair[1])\
+    .collect()
+   => [('Big', -300),
+        ('The', 0),
+        ...
+        ('Definitive', 200),
+        ('Spark', 1000)]
+
+
+* Accumulators : a way of updating a value inside of a variety of transformations and propagating that value to the driver node in an efficient and fault-tolerant way
+ - provide a mutable variable that a Spark cluster can safely update on a per-row basis
+  - can use this for debugging purposes or to create low-level aggregation
+ - variables that are added to only through an associative and commutative operation and can therefore be supported in parallel
+   
+
+   
