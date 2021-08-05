@@ -1,0 +1,115 @@
+in chapter 4
+ - stringtype
+ - biginttype
+ - structtype
+ these map to spark languages like string, integer, double
+ 
+but when it comes to dataframe, do not create strings or integers but manipulates the data for you by manipulating the Row object
+=> dataframes are actually datasets of type Row
+
+"encoder" maps the domain-specific type T to sparks internal type system
+
+when you use the dataset api, spark converts the spark row format to the object you specified( a case class or java class)
+this might slow down the operations but can porvide more flexibility.
+( but not extreme as switching programming languages )
+
+* When To Use Datasets
+ - when the operations you would like to perform cannot be expressed using dataframe manipulations
+  - might have a large set of business logic that you'd like to encode in one specific function instead of in SQL or DF 
+ - when you want or need type-safety, and you're willing to accept the cost of performance to achieve it
+  - Dataset api is type-safe / operations not valid for their types will fail at compilation not at runtime
+ - when you like to reuse a variety of transformations of entire rows between single-node workloads and spark workloads
+ 
+* Creating Datasets
+ - in java : Encoders / simply specify the class and then encode it when you come on your df
+  import org.apache.spark.sql.Encoders;
+  public class Flight implements Serializable {
+   string DEST_COUNTRY_NAME;
+   Stirng ORIGIN_COUNTRY_NAME;
+   Long DEST_COUNTRY_NAME;
+   }
+  Dataset<Flight> fligths = spark.read
+   .parquet('/data/flight-data/parquet/2010-summary.parquet/')
+   .as(Encoders.bean(Flight.class));
+ 
+ - in scala : 
+  - define scala case class
+   - immutable***
+    - this frees users from needing to keep track of where and when things are mutated
+   - decomposable through pattern matching
+    - this simplifies branching logic, which leads to less bugs and more readable code
+   - allows for comparison based on structure instead of reference***
+    - this allows users to compare instances as if they were primitive values
+   - easy to use and manipulate
+   
+  - code
+   - defining a case class
+   case class Flight (DEST_COUNTRY_NAME: String,
+                      ORIGIN_COUNTRY_NAME: String, count: BigInt)
+                      
+   - representing a single record
+   val flightsDF = spark.read
+       .parqeut('/data/flight-data/parquet/2010-summary.parquet/')
+   val flights = flightsDF.as[Flight]
+ 
+
+* Actions : like collect, take and count
+ flight.show(2)
+  +-----------------+-------------------+-----+
+  |DEST_COUNTRY_NAME|ORIGIN_COUNTRY_NAME|count|
+  +-----------------+-------------------+-----+
+  | United States| Romania| 1|
+  | United States| Ireland| 264|
+  +-----------------+-------------------+-----+
+  
+ accessing one of the cass classes / simply specify the named attribute of the case class
+ flights.first.DEST_COUNTRY_NAME
+ 
+* Transformations / the same as the DF, more complex and strong than DF alone (becuase of the JAVA Virtual Machine Type)
+ 1. filtering
+  - ex) accepts a Flight and returns BOOL values that describes whether the origin and destination are the same.
+   def originIsDestination(flight_row: Flight): Boolean = {
+     return fligth_row.ORIGIN_COUNTRY_NAME == flight_row.DEST_COUNTRY_NAME}
+    
+  - now can pass this function to filter method spcecifying that for each row it shoud verify
+   flights.filter(flight_row => originIsDestination(flight_row)).first()
+   => result
+   Flight = Flight(United States, United States, 348113)
+ 
+ 2. mapping : map one value to another value / extract value, compare a set of values or etc
+  - extracting (like select)
+   val destinations = flights.map(f => f.DEST_COUNTRY_NAME)
+   => end up with a Dataset of type String. (b/c spark already knows the JVM type that this result should return and allows us to benefit from compile-time checking)
+   
+   
+* Joins : same as the DF
+ - joinwith: roughly equal to co-group and end up with 2 nested Datasets inside of one.
+  - useful: maintain more info in the join or perform some more sophisticated manipulation
+  
+* Grouping and Aggregations
+ - groupBy, rollup and cube apply but these returns DF(loose type info)
+ - ex) groupByKey : group by specific key and get a typed Dataset in return.
+  - dont accept a column name but function.
+   
+   flights.groupByKey( x => x.DEST_COUNTRY_NAME).count()
+   
+   you can see the performance differences by appending .explain at the end of the code above.
+   
+ - now we can operate on the Key Value Dataset with functions that will manipulate the groupings as raw objects
+  def grpSum(countryName:String, values: Iterator[Flight]) = {
+  values.dropWhile(_.count < 5).map(x => (countryName, x))
+  }
+  flights.groupByKey(x => x.DEST_COUNTRY_NAME).flatMapGroups(grpSum).show(5)
+  
+  +--------+--------------------+
+  | _1| _2|
+  +--------+--------------------+
+  |Anguilla|[Anguilla,United ...|
+  |Paraguay|[Paraguay,United ...|
+  | Russia|[Russia,United St...|
+  | Senegal|[Senegal,United S...|
+  | Sweden|[Sweden,United St...|
+  +--------+--------------------+
+   
+   
+  
