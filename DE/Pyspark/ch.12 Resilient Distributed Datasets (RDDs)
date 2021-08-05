@@ -1,0 +1,252 @@
+higher-level manipulation will not meet the business or engineering problem
+-> this is when lower-level APIs need
+
+RDD, SparkContext and distributed shared variables like accumulators and broadcast variables.
+
+* What are the LOW-LEVEL APIs?
+ - for manipulating distributed data (RDDs)
+ - for distributing and manipulating distributed shared variables( broadcast variables and accumulators)
+ 
+ 1. when to use the low-level apis?
+  - need some functionality that you can not find in the higher-level apis
+  - need to maintain some legacy codebase written using RDDs
+  - need to some custom shared variable manipulation
+  
+ 2. how to use?
+  - SparkContext: entry point for lower-level api
+   - acess it thourgh sparksession( the tool you use to perform computation across a spark cluster_
+    spark.sparkContext
+    
+* RDDs (not commonly used.)
+ - all spark code, whether DF or Dataset, compiles down to an RDD.
+ - RDDs represents an immutable, partitioned collection of records that can be operated on in parallel
+ - RDDs the records are just java, Scala, or python objects of the programming choosing
+  - able to store anything you want, in any format but with some potential issues
+   - every manipulations and interaction between values must be defined by hand
+   - optimizations are going to require much more manual work (because spark does not understand the inner structure of your records as it does with the structured API.s
+ - similar to dataset but rdds are not stored in the structured data engine.
+  - trivial to convert back and forth between RDDs and Datasets
+  
+ 1. types of rdds
+  - generic Rdd type
+  - key-value rdd: provides additional fucntions(aggregating by key)
+   - has special operations as well as a concept of custom partitioning by key
+  - main properties
+   - a list of partitions
+   - a function for computing each split
+   - a list of dependencies on other rdds
+   - optinally, a Partitioner for key-value RDDs
+   - optinally, a list of preferred locations on which to compute each split
+  - there is no concept of rows
+ 
+ 2. when to use?
+  - not create unless have a very specific reason
+  
+* Creating RDDs
+ 1. interoperating between DF, datasets and rdds
+  - easiest ways to get RDD is from existing DF or dataset converting these to RDD
+  only applies to scala and Java (python doesnt have dataset)
+   in scala: converts a dataset to Rdd
+   spark.range(500).rdd
+
+   in python
+   spark.range(10).rdd
+  
+  - to operate on this data, need to convert this Row object to the correct data type or extract values out of it
+   in scala
+   spark.range(10).toDF().rdd.map(rowObject -> rowObject.getLong(0))
+   
+   in python
+   spark.range(10).toDF('id').rdd.map(lambda row: row[0])
+   
+  - create DF or dataset from Rdd
+   in scala,in python
+   spark.range(10).rdd.toDF()
+   
+ 2. from a local collection
+  - need to use parallelize method on a sparkContext
+   - turns a single node collection to a parallel collection 
+   - explicitly state the number of partitions into which you would like to distrivute this array.
+   - ex) creating two partitions
+    in scala
+    val myCollection = 'Spark The Definitive Guide : Big Data Processing Made Simple'
+      .split(' ')
+    val words = spark.saprkContext.parallelize(myCollection,2)
+    
+    in python
+    myCollection = 'Spark The Definitive Guide : Big Data Processing Made Simple'
+      .split(' ')
+    words = spark.saprkContext.parallelize(myCollection,2)
+    
+   - name the Rdd
+    in scala, in python
+    words.setName('myWords')
+    words.name // myWords
+    
+  3. from data sources
+   - read text file line by line
+    spark.sparkContext.textfile('/some/path/withTextFiles')
+ 
+ * Manipulating RRDs
+  - the same as manipulating DF with raw java or scala objects
+  
+ * Transformations
+  - similar to functionality in Structured Api
+  
+  1. distinct : removes duplicates from the Rdd
+   words.distinct().count()
+   
+  2. filter : equivalent to creating SQL where clause
+   - just need to return a boolean type to be used as a filter function
+   - ex) filter Rdd to keep only the words that begin with the letter S
+    - create the function
+     in scala
+     def startsWithS(individaul:String) = {
+       individual.startswith('S') }
+
+     in python
+     def startsWithS(individual):
+       return individual.startswith('S')
+       
+    - filter data
+     in scala
+     words.filter(word => startsWithS(word)).collect()
+     
+     in python
+     words.filter(lambda word: startsWithS(word)).collect()
+   
+  3. map : specify a function that return the value that you want, given the correct input
+           then apply that, record by record
+   - ex) map the current word to the word, its starting letter,, and whether the word begins with 'S'
+    in scala
+    val words2 = words.map(word => (word, word(0), word.startswith('S')))
+     
+    in pyton
+    words2 = words.map(lambda word: (word, word[0], word.starswith('S')))
+     
+    filter
+    in scala
+    words.filter(record => record._3).take(5)
+     
+    in python
+    words.filter(lambda record: record[2]).take(5)
+     => this returns a tuple of 'Spark," "S," and "true," as well as "Simple," "S," and "True."
+     
+   - flatMap
+    - provides a simple extension of the map function / each current row should return multiple rows
+    in scala
+    words.flatMap(word => word.toSeq).take(5)
+    
+    in python
+    words.flatMap(lambda word: list(word)).take(5)
+    => S,P,A,R,K
+    
+  4. sort : sortBy 
+   in scala
+   wrods.sortBy(word => word.lenght() * -1).take(2)
+   
+   in python
+   words.sortBy(lambda word: len(word) * -1).take(2)
+   
+  5. random splits : randomSplit
+   in scala
+   val fiftyFiftySplit = words.randomSplit(Array[Double](0.5, 0.5))
+   
+   in python
+   fiftyFiftySplit = words.randomSplit([0.5, 0.5])
+   => return an array of Rdds
+   
+   
+ * Actions : to kick off our speicified transformation
+  1. reduce : to reduce an Rdd fo any kind of value to one value
+   in scalal
+   spark.sparkContext.parallelize(1 to 20).reduce(_ + __)
+   
+   in python
+   spark.sparkContext.parallelize(range(1,21)).reduce(lambda x,y : x+y)
+   => 210
+   
+   - you can define function to reduce
+   
+  2. count
+    words.count()
+   - countApprox : approximation of the count method, it must execute within a timeout
+    - confidence: probability that the error bounds of the result will contain the true value
+     - if confidence = 0.9 then we expect 90% of the reults to contain the true count
+    
+    val confidence = 0.95 (0 ~ 1)
+    val timeoutMilliseconds = 400
+    words.countApprox(timeoutMilliseconds, confidence)
+    
+   - countApproxDistinct
+   
+   - countByValue : count the number of values in a given RDD, by loading the result set into the memory of the driver
+    words.countByValue()
+    
+   - countByValueApprox: same as countByValue but it does so as an approximation
+    words.countByValueApprox(timeout time, condfidence)  
+  
+ 3. first: returns the first value
+  words.first()
+  
+ 4. max and min: returns maximum and minimum value
+  spark.sparkCountext.parallelize(1 to 20).max()
+  spark.sparkCountext.parallelize(1 to 20).min()
+  
+ 5. take: take a number of values from rdd
+  - first scan one partition and then use the results from that partition to estimate the number of additional partitions needed to satisfy the limit
+   - variations
+    - takeOrdered
+    - takeSample : specify a fixed-size random sample from your RDD
+    - top: the opposite of takeOrdered 
+   
+   words.take(5)
+   words.takeOrdered(5)
+   words.top(5)
+   val withReplacement = true
+   val numberToTake = 6
+   val randomSeed = 100L
+   words.takeSample(withReplacement, numberToTake, randomseed)
+ 
+ 
+* Saving Files : write plain-text files
+ 1. saveAsTextFile
+   words.saveAsTextFile('path')
+   
+ 2. SequenceFiles: flat file consisting of binary key-value pairs. used in mapreduce as input/output formats
+   words.saveAsObjectFile('path')
+   
+ 3. Hadoop Files
+   
+   
+* Caching
+ - can either cache or persist an RDD
+ - by default, cache and persist only handle data in memory
+  words.cache()
+ - storage level
+  words.getStrongeLevel()
+   
+   
+* Checkpointing: the act of saving an RDD to disk so that future references to this RDD point to those intermediate partitions on dis rather than recomputing the RDD from its original source
+ - helpful when performing iterative computation
+  spark.sparkContext.setCheckpointDir('path')
+  words.checkpoint()
+  
+
+* Pipe RDDs to System Commands ??? 
+ - pipe : return an RDD created by piping elements to a forked external process
+ - the resulting RDD is computed by executing the given process once per partition
+ - all elements of each input partition are written to a process's stdin as lines of input separated by a newline
+ 
+ - ex) pipe each partition to the command wc
+  words.pipe('wc -l').collect()
+  
+ 1. mapPartitions
+
+
+     
+      
+   
+  
+  
+ 
