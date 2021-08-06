@@ -1,0 +1,30 @@
+key topics
+ - the architecture and components of a Spark Application
+ - the life cycle of a Spark Application inside and outside of Spark
+ - Important low-level execution properties, such as pipelining
+ - what it takes to run a Spark Application
+ 
+* The Architecture of a Spark Application
+ - previously convered 3 concept
+  - spark driver: the driver is the process in the driver seat of the spark application / controller of the excuation
+  - spark executors: processes that perform the tasks assigned by the driver/ take the tasks assigned by driver, run them, and report back their state and result
+  - cluster manager: responsible for maintaining a cluster of machines that will run your spark application
+ - when it comes to actually run a spark application, we request resources from the cluster manager to run it
+ - spark supports 3 cluster managers
+  - simple built in standalone cluster manager
+  - apache mesos
+  - hadoop Yarn
+  
+ 1.Execution modes
+  - the power to determine where the aforementioned resources are physically located when you go to run your application.
+   - cluster mode: most common ay of running spark application.
+    - user submits a pre-compiled JAR, Python script to a cluster manager. then the manager luanches the driver process on a worker node inside the cluster in addition to executor process.
+   - client mode
+    - nearly same as the cluster mode except spark driver remains on the client machine that submitted the application
+    - client machine is reponsible for mainataining the spark dirver process, and the cluster manager maintains the executor processes
+   - local mode
+    - it runs entire spark application on a single machine
+    - achieves parallelism through threads on that single machine
+    - not recommend this mode for running production applications
+
+* The Life of
