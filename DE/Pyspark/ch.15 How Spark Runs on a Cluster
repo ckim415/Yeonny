@@ -27,4 +27,90 @@ key topics
     - achieves parallelism through threads on that single machine
     - not recommend this mode for running production applications
 
-* The Life of
+* The Life Cycle of a Spark Application ( outside spark )
+ - assume that a cluster is already running with four nodes, a driver and three worker nodes
+ 
+ 1. client request
+  - submit an actual application -> request to the cluster manager driver node
+  - to do this, run the command below in the terminal
+   ./bin/spark-submit \
+     --class <main-class> \
+     --master <master-url> \
+     --deploy-mode cluster \
+     --conf <key>=<value> \
+     ... # other options
+     <application-jar> \
+     [application-arguments]
+     
+ 2. launch
+  - the driver process has been placed on the cluster, it begins running user code 
+  - this code must include SparkSession that initailizes a Spark cluster
+  - the SparkSession will communicate with the cluster manager, asking it to launch spark executor processes across the cluster
+  - the cluster manager responds by launching the executor processes and sends the relevant information about their locations to the driver process
+  - now we have spark cluster
+  
+ 3. execution
+  - the driver and workers communicate among themselves, executing code and moving data around.
+ 
+ 4. completion
+  - after application completes, the driver processes exits with either success or failure
+  - cluster manager shut down the executors in that spark cluster for the dirver
+ 
+ 
+* The Life Cycle of a Spark Application (inside spark)
+ 1. SparkSession
+  - the first step of any spark application is creating a spakrsession
+  in Scala
+  import org.apache.spark.sql.SparkSession
+  val spark = SparkSession.builder().appName("Databricks Spark Example")
+   .config("spark.sql.warehouse.dir", "/user/hive/warehouse")
+   .getOrCreate()
+  
+  in Python
+  from pyspark.sql import SparkSession
+  spark = SparkSession.builder.master("local").appName("Word Count")\
+   .config("spark.some.config.option", "some-value")\
+   .getOrCreate()
+  
+  - the sparkcontext
+   - a object in sparksession
+   - this represent the connection to the spark cluster ( how you communicate with some of sparks's low-level api's)
+   - can create rdds, accumulators, and broadcast variables, and run the code on the cluster
+   - initialize sparkcontext
+    in Scala
+    import org.apache.spark.SparkContext
+    val sc = SparkContext.getOrCreate()
+ 
+ 
+ 
+ 2. logical instructions
+  - spark code consists of transformation and actions
+  - logical intsructions to physical execution
+   - 
+   
+ 3. spark job
+  - one spark job for one action.
+  - each job breaks down into a series of stages
+  
+ 4. stages
+  - represent groups of tasks that can be executed together to compute the same operation on multiple machines.
+ 
+ 5. tasks
+  - stages consist of tasks
+  - each tasks corresponds to a combination of blocks of data and a set of transformations that will run on a single executor
+  - if there is a big partiton, we will have one task
+  - unit of computation applied to a unit of data
+  
+* Execution details
+ - spark automatically pipelines stages and tasks that can be done together.
+ - all shuffle operations, spark writes the data to stable storage and can reuse it across multiple jobs.
+ 
+ 1. pipelining
+  - spark performs as many steps as it can at one point in time before writing data to memory or disk
+  - occures at and below the RDD level
+  - any sequence of operations is collapsed into a single stage of tasks that do all the operations together
+ 
+ 2. shuffle persistence
+ 
+  - 
+  
