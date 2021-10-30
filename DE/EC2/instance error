@@ -1,0 +1,11 @@
+instance 생성하고 내가 원하는 대로 보여주지 않을때
+ - 주의 요함 
+ - 페이지가 뜨지 않을때
+ 
+ ssh로 manually user data 를 입력하면 에러 수정 가능
+ 1. open power shell
+ 2. go to ec2 server by typing 
+  - ssh -i (key pair's 주소)/key pair name ec2-user@(ip-adress)
+  - user data by line
+  
+  
